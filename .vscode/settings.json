@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.ino": "cpp"
+    },
+
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/.build",
+        "--background-index",
+        "--query-driver=C:/Users/royna/AppData/Local/Arduino15/packages/**"
+    ]
+}

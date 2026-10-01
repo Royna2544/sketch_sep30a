@@ -1,0 +1,37 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Arduino: Build Mega 2560",
+            "type": "shell",
+            "command": "arduino-cli",
+            "args": [
+                "compile",
+                "--fqbn",
+                "arduino:avr:mega",
+                "--build-path",
+                ".build",
+                "."
+            ],
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Arduino: Upload Mega 2560",
+            "type": "shell",
+            "command": "arduino-cli",
+            "args": [
+                "upload",
+                "--fqbn",
+                "arduino:avr:mega",
+                "--port",
+                "COM5",
+                "."
+            ],
+            "problemMatcher": []
+        }
+    ]
+}
