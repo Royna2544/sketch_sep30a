@@ -315,46 +315,43 @@ bool SD::sendSingleDataToken(DataToken *tok, uint32_t lba) {
 }
 
 SD::Session SD::begin(uint32_t clk) {
-  SD::SDSession fSession{false, this};
-  Resp3 resp3;
+  if (!Base::_begin(clk))
+    return {false, nullptr};
 
-  if (!SPIWrap::_begin(clk)) {
-    return fSession;
-  }
+  Session session{false, this};
+  Resp3 resp3;
 
   log(SD_LOGTAG "Init card in SPI mode, send CMD0");
   if (!goIdle())
-    return fSession;
+    return session;
   log(SD_LOGTAG "CMD0 success, proceed to CMD8");
   if (!sendIfCond(0x01AA /* 2.7–3.6 V, pattern AA */))
-    return fSession;
+    return session;
   log(SD_LOGTAG "CMD8 success, enable crc");
   if (!enableCRC(true))
-    return fSession;
+    return session;
   log(SD_LOGTAG "CRC on, prepare sdhc");
   if (!sendOpCond(/* opcond=HCS */ 1UL << 30))
-    return fSession;
+    return session;
   log(SD_LOGTAG "Card ready on SDHC");
 
   // read ocr
   if (!getR3(Packet::Cmd::CMD58, 0, &resp3))
-    return fSession;
+    return session;
   if (!resp3.card_powerup_status ||
       resp3.address_mode == Resp3::AddressMode::Byte) {
     log(SD_LOGTAG "Card powerup status false or address mode byte");
-    return fSession;
+    return session;
   }
   log(SD_LOGTAG "Card powered up correctly");
-  return {true, this};
+  session.success = true;
+  return session;
 }
 
-SD::SDSession::~SDSession() {
-  // Maybe bad code 😛
+void SD::end() {
   digitalWrite(49, HIGH); // deassert CS
-  // cycle some useless clocks
-  for (int i = 0; i < 10; i++)
-    static_cast<SD *>(wrap)->transfer();
-  log(SD_LOGTAG "SDSession end");
+  transfer();             // provide trailing clocks with the card deselected
+  Base::end();
 }
 
 bool SD::isBusy() { return false; }

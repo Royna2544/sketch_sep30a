@@ -12,6 +12,47 @@ extern bool g_spi_init;
 #define SPI_TAG "SPI> "
 
 #define CS_NONE 0xFFFFFFFF
+
+template <class Device> class SPISession {
+  Device *device_;
+
+  void reset() {
+    Device *device = device_;
+    device_ = nullptr;
+    success = false;
+    if (device)
+      device->end();
+  }
+
+public:
+  bool success;
+
+  SPISession(bool success = false, Device *device = nullptr)
+      : device_(device), success(success) {}
+
+  ~SPISession() { reset(); }
+
+  SPISession(const SPISession &) = delete;
+  SPISession &operator=(const SPISession &) = delete;
+
+  SPISession(SPISession &&other) noexcept
+      : device_(other.device_), success(other.success) {
+    other.device_ = nullptr;
+    other.success = false;
+  }
+
+  SPISession &operator=(SPISession &&other) noexcept {
+    if (this != &other) {
+      reset();
+      device_ = other.device_;
+      success = other.success;
+      other.device_ = nullptr;
+      other.success = false;
+    }
+    return *this;
+  }
+};
+
 // SPIWrap: Wraps SPI transactions for a specific device, ensuring that only one
 // device is active at a time.
 template <SPIOwner owner, uint32_t CS, bool active_low, uint32_t defClock,
@@ -20,6 +61,10 @@ class SPIWrap {
   const char *name;
 
 public:
+  using Self =
+      SPIWrap<owner, CS, active_low, defClock, bitOrder, dataMode>;
+  using Session = SPISession<Self>;
+
   enum class Status {
     None,           // Default state
     Init,           // Initialized and ready for transfers
@@ -43,32 +88,6 @@ public:
     log(SPI_TAG "init dev: %s cs: %d", name, CS);
     status = Status::Init;
   }
-
-  struct Session {
-    bool success;
-    SPIWrap *wrap;
-
-    Session(bool success, SPIWrap *wrap) : success(success), wrap(wrap) {}
-
-    ~Session() {
-      if (wrap)
-        wrap->end();
-    }
-
-    Session(const Session &) = delete;
-    Session &operator=(const Session &) = delete;
-    Session(Session &&other) : success(other.success), wrap(other.wrap) {
-      other.wrap = nullptr;
-    }
-    Session &operator=(Session &&other) {
-      if (this != &other) {
-        success = other.success;
-        wrap = other.wrap;
-        other.wrap = nullptr;
-      }
-      return *this;
-    }
-  };
 
   bool _begin(uint32_t clk) {
     if (g_spi_owner != SPIOwner::None || status != Status::Init) {
@@ -98,7 +117,7 @@ public:
     if (_begin(clk)) {
       return Session{true, this};
     } else
-      return Session{false, this};
+      return Session{false, nullptr};
   }
 
   struct TransferResult {

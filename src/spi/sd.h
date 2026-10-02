@@ -10,7 +10,12 @@
 class SD
     : public SPIWrap<SPIOwner::Sd, 49, true, KHZ(400L), MSBFIRST, SPI_MODE0>,
       public FsBlockDeviceInterface {
+  using Base =
+      SPIWrap<SPIOwner::Sd, 49, true, KHZ(400L), MSBFIRST, SPI_MODE0>;
+
 public:
+  using Session = SPISession<SD>;
+
   struct Packet {
     enum class Cmd : uint8_t {
       CMD0 = 0 | 0x40,   // Note: this is wire result, not a real command value
@@ -255,12 +260,8 @@ public:
   uint64_t readSectorCount();
   bool sendSingleDataToken(DataToken *tok, uint32_t lba);
 
-  struct SDSession : public Session {
-    SDSession(bool success, SD *wrap) : Session(success, wrap) {}
-    ~SDSession();
-  };
-
   Session begin(uint32_t clk = KHZ(400L));
+  void end();
 
   // FsBlockDeviceInterface implementation
   bool isBusy() override;
