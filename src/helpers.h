@@ -50,3 +50,18 @@ inline void flip(uint8_t *in, size_t bytes, uint8_t *out) {
   for (size_t i = 1; i <= bytes; i++)
     out[bytes - i] = in[i - 1];
 }
+
+class Timer {
+  int32_t millis_;
+  uint32_t start;
+  Timer(int32_t millis_in) : millis_(millis_in), start(millis()) {}
+
+public:
+  bool rang() { return dur() >= millis_; }
+
+  int32_t dur() { return millis() - start; }
+
+  static Timer c() { return Timer(300); }
+
+  static Timer io() { return Timer(500); }
+};

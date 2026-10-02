@@ -15,7 +15,7 @@ struct Command {
 
   constexpr static int SUBSYS_SD = 0;
   constexpr static int SUBSYS_FLASH = 1;
-} commands[2][90] = {
+} commands[2][10] = {
     {{"ls", "List files, needs target directory",
       [](int argc, char **argv) {
         if (argc != 1)
@@ -23,7 +23,7 @@ struct Command {
         auto s = g_sd->begin();
         return (int)!g_fat.ls(*argv, LS_DATE | LS_SIZE);
       }},
-     {"cat", "Read file to serial. needs target file, first 128 bytes",
+     {"cat", "Read file to serial. needs target file,128 bytes",
       [](int argc, char **argv) {
         if (argc != 1)
           return 1;
@@ -109,23 +109,27 @@ void handle_commands() {
     for (int i = 0; i < found; i++) {
       vlog("STRSPLIT PARSED>: #%d %s", i, split[i]);
     }
+
+    if (found == 1 && split[0][0] == '?') {
+      Serial.println("Available commands:");
+      for (Command *cur = commands[Command::SUBSYS_SD]; cur->name != nullptr;
+           cur++) {
+        log("sd:  %s: %s", cur->name, cur->help);
+      }
+      for (Command *cur = commands[Command::SUBSYS_FLASH]; cur->name != nullptr;
+           cur++) {
+        log("flash:  %s: %s", cur->name, cur->help);
+      }
+      return;
+    }
+
     if (found < 2) {
       Serial.println("Usage: <section> <subcommand> (<args>...)");
       return;
     }
     Command *subsys = nullptr;
 
-    if (split[0][0] == '?') {
-      Serial.println("Available commands:");
-      for (Command *cur = commands[Command::SUBSYS_SD]; cur->name != nullptr;
-           cur++) {
-        log("sd:  %s: %s\n", cur->name, cur->help);
-      }
-      for (Command *cur = commands[Command::SUBSYS_FLASH]; cur->name != nullptr;
-           cur++) {
-        log("flash:  %s: %s\n", cur->name, cur->help);
-      }
-    } else if (!strcmp(split[0], "sd")) {
+    if (!strcmp(split[0], "sd")) {
       subsys = commands[Command::SUBSYS_SD];
     } else if (!strcmp(split[0], "flash")) {
       subsys = commands[Command::SUBSYS_FLASH];

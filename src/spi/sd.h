@@ -10,8 +10,7 @@
 class SD
     : public SPIWrap<SPIOwner::Sd, 49, true, KHZ(400L), MSBFIRST, SPI_MODE0>,
       public FsBlockDeviceInterface {
-  using Base =
-      SPIWrap<SPIOwner::Sd, 49, true, KHZ(400L), MSBFIRST, SPI_MODE0>;
+  using Base = SPIWrap<SPIOwner::Sd, 49, true, KHZ(400L), MSBFIRST, SPI_MODE0>;
 
 public:
   using Session = SPISession<SD>;
@@ -220,21 +219,6 @@ public:
     static bool is(uint8_t byte) {
       return ((byte & 0b10000) == 0) && ((byte & 0b1) == 1);
     }
-  };
-
-  class Timer {
-    int32_t millis_;
-    uint32_t start;
-    Timer(int32_t millis_in) : millis_(millis_in), start(millis()) {}
-
-  public:
-    bool rang() { return dur() >= millis_; }
-
-    int32_t dur() { return millis() - start; }
-
-    static Timer c() { return Timer(300); }
-
-    static Timer io() { return Timer(500); }
   };
 
   constexpr static int retries = 8;

@@ -100,7 +100,22 @@ void do_setup() {
   dumpSDInfo();
 
   {
+    auto s = g_flash->begin();
+    if (!s.success) {
+      log(FLASH_TAG "Failed to init flash device");
+      return;
+    }
     g_flash->transact(Flash::Cmd::READ_JEDEC_ID);
+    g_flash->transact(Flash::Cmd::READ_STATUS);
+    Flash::Result::Data::Status status{};
+    status.bp0 = 1;
+    status.bp1 = 1;
+    status.bp2 = 0;
+    status.bp3 = 0;
+    status.srwd = 1;
+    g_flash->transact(Flash::Cmd::WRITE_STATUS_REGISTER, &status);
+    g_flash->setMode(Flash::Mode::WriteProtect, true);
+    g_flash->transact(Flash::Cmd::WRITE_ENABLE);
     g_flash->transact(Flash::Cmd::READ_STATUS);
   }
 }
@@ -113,7 +128,7 @@ void do_loop() {
   // put your main code here, to run repeatedly:
 
   g_flash->transact(Flash::Cmd::WRITE_ENABLE);
-  Flash::ReadData rdata{};
+  Flash::Payload rdata{};
   rdata.bytes_count = 10;
   uint8_t d[23] = {};
   rdata.data = d;
