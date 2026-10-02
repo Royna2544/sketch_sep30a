@@ -16,6 +16,7 @@ inline void logging(const char *fmt, ...) {
   va_end(args);
 
   Serial.println(logbuf);
+  Serial1.println(logbuf);
 }
 
 // Verbose variants

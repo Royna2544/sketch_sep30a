@@ -14,11 +14,10 @@ public:
   } effects[5];
   RGBLED(uint8_t r, uint8_t g, uint8_t b);
   void setColor(uint8_t r, uint8_t g, uint8_t b);
-  void playEffect(const Effect *effect);
+  void playEffect(const Effect *effect, bool clearAfter = true);
 
 private:
   uint8_t redPin;
   uint8_t greenPin;
   uint8_t bluePin;
-  Effect *currentEffect;
 };

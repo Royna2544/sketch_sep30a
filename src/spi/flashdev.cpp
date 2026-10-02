@@ -2,10 +2,6 @@
 
 // MX25L6406E
 
-constexpr auto SECTOR_SHIFT = 12;
-constexpr auto SECTOR_MASK = ((1U << SECTOR_SHIFT) - 1);
-constexpr size_t PAGE_SIZE = 256;
-
 Flash::Flash() : SPIWrap("flash") {
   pinMode(WP_ENABLE_GPIO, OUTPUT);
   pinMode(HOLD_GPIO, OUTPUT);
@@ -381,8 +377,7 @@ void Flash::describe(Cmd cmd, Result &res) {
     log(FLASH_TAG "Status: wel: %d wip %d bp3..0: 0b%d%d%d%d protLvl: %s",
         res.data.status.wel, res.data.status.wip, res.data.status.bp3,
         res.data.status.bp2, res.data.status.bp1, res.data.status.bp0,
-        Result::Data::Status::protLvl_str(res.data.status.getProtLvl())
-            .c_str());
+        Result::Data::Status::protLvl_str(res.data.status.getProtLvl()));
     break;
   }
   case Cmd::WRITE_ENABLE: {

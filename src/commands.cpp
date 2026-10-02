@@ -1,3 +1,4 @@
+#include "led/led.h"
 #include "spi/flashdev.h"
 #include "spi/sd.h"
 #include <SdFat.h>
@@ -42,6 +43,26 @@ struct Command {
     {{"yay", "YAY YIPEE",
       [](int argc, char **argv) {
         logs("YAY");
+        return 0;
+      }},
+     {"flash", "Flash file name in sdcard argv[0] to flash",
+      [](int argc, char **argv) {
+        if (argc != 1)
+          return 1;
+        auto s = g_flash->begin();
+        if (!s.success) {
+          log("COMMAND> flash: begin failed");
+          return 2;
+        }
+        auto file = g_fat.open(argv[0]);
+        if (!file.isOpen()) {
+          log("COMMAND> flash: open failed");
+          return 3;
+        }
+        log("COMMAND> flash: file size: %d", file.fileSize());
+        uint64_t pages = file.fileSize() / Flash::PAGE_SIZE;
+        auto res = g_flash->transact(Flash::Cmd::PROGRAM_PAGE);
+        log("COMMAND> flash: done");
         return 0;
       }},
      {}}};
@@ -133,6 +154,46 @@ void handle_commands() {
       subsys = commands[Command::SUBSYS_SD];
     } else if (!strcmp(split[0], "flash")) {
       subsys = commands[Command::SUBSYS_FLASH];
+    } else if (!strcmp(split[0], "led")) {
+      if (found != 2) {
+        Serial.println("Usage: led <subcommand> (<args>...)");
+        return;
+      }
+      RGBLED led(5, 6, 7);
+      if (!strcmp(split[1], "rainbow")) {
+        led.playEffect(&led.effects[0]);
+      } else if (!strcmp(split[1], "sunset")) {
+        led.playEffect(&led.effects[2]);
+      } else if (!strcmp(split[1], "ocean")) {
+        led.playEffect(&led.effects[3]);
+      } else if (!strcmp(split[1], "neon")) {
+        led.playEffect(&led.effects[4]);
+      } else if (!strcmp(split[1], "off")) {
+        led.setColor(0, 0, 0);
+      } else if (!strcmp(split[1], "i_want_full_led_mode")) {
+        Serial.println(
+            "Fine, but this will loop forever. Press reset to exit.");
+        // TODO: Use millis() instead of delay() to avoid
+        // blocking the main loop.
+        while (true) {
+          led.playEffect(&led.effects[0]);
+          delay(100);
+          led.playEffect(&led.effects[1]);
+          delay(100);
+          led.playEffect(&led.effects[2]);
+          delay(100);
+          led.playEffect(&led.effects[3]);
+          delay(100);
+          led.playEffect(&led.effects[4]);
+          delay(100);
+        }
+      } else {
+        Serial.println("Unknown LED effect");
+      }
+      return;
+    } else {
+      Serial.println("Unknown subsystem");
+      return;
     }
 
     if (!findAndRun(subsys, split[1], found - 2, &split[2])) {

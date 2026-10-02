@@ -315,43 +315,47 @@ bool SD::sendSingleDataToken(DataToken *tok, uint32_t lba) {
 }
 
 SD::Session SD::begin(uint32_t clk) {
-  if (!Base::_begin(clk))
+  if (!SPIWrap::_begin(clk))
     return {false, nullptr};
 
   Session session{false, this};
-  Resp3 resp3;
+  if (!booted) {
+    Resp3 resp3;
 
-  log(SD_LOGTAG "Init card in SPI mode, send CMD0");
-  if (!goIdle())
-    return session;
-  log(SD_LOGTAG "CMD0 success, proceed to CMD8");
-  if (!sendIfCond(0x01AA /* 2.7–3.6 V, pattern AA */))
-    return session;
-  log(SD_LOGTAG "CMD8 success, enable crc");
-  if (!enableCRC(true))
-    return session;
-  log(SD_LOGTAG "CRC on, prepare sdhc");
-  if (!sendOpCond(/* opcond=HCS */ 1UL << 30))
-    return session;
-  log(SD_LOGTAG "Card ready on SDHC");
+    log(SD_LOGTAG "Init card in SPI mode, send CMD0");
+    if (!goIdle())
+      return session;
+    log(SD_LOGTAG "CMD0 success, proceed to CMD8");
+    if (!sendIfCond(0x01AA /* 2.7–3.6 V, pattern AA */))
+      return session;
+    log(SD_LOGTAG "CMD8 success, enable crc");
+    if (!enableCRC(true))
+      return session;
+    log(SD_LOGTAG "CRC on, prepare sdhc");
+    if (!sendOpCond(/* opcond=HCS */ 1UL << 30))
+      return session;
+    log(SD_LOGTAG "Card ready on SDHC");
 
-  // read ocr
-  if (!getR3(Packet::Cmd::CMD58, 0, &resp3))
-    return session;
-  if (!resp3.card_powerup_status ||
-      resp3.address_mode == Resp3::AddressMode::Byte) {
-    log(SD_LOGTAG "Card powerup status false or address mode byte");
-    return session;
+    // read ocr
+    if (!getR3(Packet::Cmd::CMD58, 0, &resp3))
+      return session;
+    if (!resp3.card_powerup_status ||
+        resp3.address_mode == Resp3::AddressMode::Byte) {
+      log(SD_LOGTAG "Card powerup status false or address mode byte");
+      return session;
+    }
+    log(SD_LOGTAG "Card powered up correctly");
+    session.success = true;
+    booted = true;
   }
-  log(SD_LOGTAG "Card powered up correctly");
-  session.success = true;
   return session;
 }
 
 void SD::end() {
   digitalWrite(49, HIGH); // deassert CS
   transfer();             // provide trailing clocks with the card deselected
-  Base::end();
+  SPIWrap::end();
+  log(SD_LOGTAG "end: SPIWrap::end done");
 }
 
 bool SD::isBusy() { return false; }

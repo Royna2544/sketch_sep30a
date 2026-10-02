@@ -10,7 +10,6 @@
 class SD
     : public SPIWrap<SPIOwner::Sd, 49, true, KHZ(400L), MSBFIRST, SPI_MODE0>,
       public FsBlockDeviceInterface {
-  using Base = SPIWrap<SPIOwner::Sd, 49, true, KHZ(400L), MSBFIRST, SPI_MODE0>;
 
 public:
   using Session = SPISession<SD>;
@@ -193,7 +192,7 @@ public:
   };
 
   struct SentDataResToken {
-    enum class Result { Accepted, CrcError, WriteError } result;
+    enum class Result { Unknown, Accepted, CrcError, WriteError } result;
 
     SentDataResToken(uint8_t byte) {
       switch ((byte & 0b1110) >> 1) {
@@ -211,6 +210,7 @@ public:
         break;
       default:
         log(SD_LOGTAG "Unknown tok: %x", (byte & 0b1110) >> 1);
+        result = Result::Unknown;
         break;
       }
     }
@@ -232,6 +232,8 @@ private:
   bool getR7(Packet::Cmd cmd, uint32_t arg, Resp7 *out_resp7);
   bool _readSingleDataToken(Packet::Cmd cmd, DataToken *out_tok,
                             size_t data_len, uint32_t arg);
+
+  bool booted = false;
 
 public:
   // Commands start

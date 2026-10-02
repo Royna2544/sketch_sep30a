@@ -5,13 +5,8 @@
 #define FLASH_TAG "FLASH> "
 
 class Flash
-    : public SPIWrap<SPIOwner::Flash, CS_NONE, true, MHZ(4), MSBFIRST,
-                     SPI_MODE0> {
-  using Base =
-      SPIWrap<SPIOwner::Flash, CS_NONE, true, MHZ(4), MSBFIRST, SPI_MODE0>;
+    : public SPIWrap<SPIOwner::Flash, 53, true, MHZ(4), MSBFIRST, SPI_MODE0> {
   using gpio_t = int;
-
-  constexpr static gpio_t CS_GPIO = 53;
   constexpr static gpio_t WP_ENABLE_GPIO = 41;
   constexpr static gpio_t HOLD_GPIO = 40;
 
@@ -22,6 +17,9 @@ class Flash
 
 public:
   Flash();
+  static constexpr auto SECTOR_SHIFT = 12;
+  static constexpr auto SECTOR_MASK = ((1U << SECTOR_SHIFT) - 1);
+  static constexpr size_t PAGE_SIZE = 256;
 
   enum class Mode { WriteProtect, Hold };
 
@@ -62,7 +60,12 @@ public:
         bool srwd;               // status-register write protection with WP#
         bool bp0, bp1, bp2, bp3; // Block protection
 
-        enum class ProtLevel { None, Upper, Lower, All };
+#define PROT(f) f(None) f(Upper) f(Lower) f(All)
+        enum class ProtLevel {
+#define fn(x) x,
+          PROT(fn)
+#undef fn
+        };
 
         struct ProtectedRange {
           bool enabled;
@@ -75,7 +78,14 @@ public:
         ProtLevel getProtLvl() const;
         ProtectedRange getProtectedRange() const;
         bool protects(uint32_t address, uint32_t byte_count) const;
-        static const char *protLvl_str(ProtLevel level);
+        static const char *protLvl_str(ProtLevel level) {
+#define fn(x)                                                                  \
+  case ProtLevel::x:                                                           \
+    return #x;
+          switch (level) { PROT(fn) }
+#undef fn
+          return "Unknown";
+        }
       } status;
       struct SFDP {
         enum : uint8_t { MAX_PARAMETER_HEADERS = 4 };
@@ -137,7 +147,7 @@ public:
 
   // Poll sr.WIP until it is clear or timeout_ms has expired.
   // Returns true if the device is ready, false if timeout or error.
-  bool pollReady(uint32_t timeout_ms = 2100);
+  bool pollReady();
 
   // Issue WREN and verify WEL. BP bits do not prevent WREN; program/erase
   // commands perform their own address-aware protection check.

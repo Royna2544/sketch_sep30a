@@ -82,6 +82,7 @@ void dumpSDInfo() {
 void do_setup() {
   // Begin serial
   Serial.begin(115200);
+  Serial1.begin(9600);
   logs("=====================================");
   logs("Hi! Mega2560 SD-Card flasher starting up! :)");
 
@@ -106,7 +107,10 @@ void do_setup() {
       log(FLASH_TAG "Failed to init flash device");
       return;
     }
-    g_flash->transact(Flash::Cmd::READ_JEDEC_ID);
+    if (!g_flash->transact(Flash::Cmd::READ_JEDEC_ID).ok) {
+      log(FLASH_TAG "Failed to read JEDEC ID");
+      return;
+    }
     g_flash->transact(Flash::Cmd::READ_STATUS);
     Flash::Result::Data::Status status{};
     status.bp0 = 1;
@@ -126,9 +130,6 @@ void do_setup() {
 void do_loop() {
   extern void handle_commands();
   handle_commands();
-
-  RGBLED led(5, 6, 7);
-  led.playEffect(&led.effects[0]);
   return;
   // put your main code here, to run repeatedly:
 

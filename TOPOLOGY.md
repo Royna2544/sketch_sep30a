@@ -1,0 +1,12 @@
+LA:
+CH0 = SCK
+CH1 = MOSI
+CH2 = MISO
+CH3 = CS_SD
+CH4 = CS_FLASH
+
+SD:
+CS=49
+
+Flash:
+CS=53
