@@ -1,5 +1,6 @@
 #include <RtcDS1302.h>
 
+#include "led/led.h"
 #include "spi/flashdev.h"
 #include "spi/sd.h"
 #include "spi/sdinitroutine.h"
@@ -114,9 +115,11 @@ void do_setup() {
     status.bp3 = 0;
     status.srwd = 1;
     g_flash->transact(Flash::Cmd::WRITE_STATUS_REGISTER, &status);
-    g_flash->setMode(Flash::Mode::WriteProtect, true);
+    g_flash->setWriteProtectPin(true);
+    // WP# + SRWD locks WRSR, not WREN. Do not leave WEL armed after checking.
     g_flash->transact(Flash::Cmd::WRITE_ENABLE);
     g_flash->transact(Flash::Cmd::READ_STATUS);
+    g_flash->transact(Flash::Cmd::WRITE_DISABLE);
   }
 }
 
@@ -124,6 +127,8 @@ void do_loop() {
   extern void handle_commands();
   handle_commands();
 
+  RGBLED led(5, 6, 7);
+  led.playEffect(&led.effects[0]);
   return;
   // put your main code here, to run repeatedly:
 
