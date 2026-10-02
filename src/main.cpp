@@ -1,8 +1,9 @@
 #include <RtcDS1302.h>
 
-#include "core.h"
+#include "spi/flashdev.h"
+#include "spi/sd.h"
+#include "spi/sdinitroutine.h"
 #include <SPI.h>
-#include <stdarg.h>
 
 Flash *g_flash;
 SD *g_sd;
@@ -79,9 +80,9 @@ void do_setup() {
   logs("=====================================");
   logs("Hi! Mega2560 SD-Card flasher starting up! :)");
   {
-    SDInit sdinit;
+    SDInitRoutine sdinit;
     auto s = sdinit.begin();
-    sdinit.init();
+    sdinit.run();
   }
   logs("Init SD done");
 

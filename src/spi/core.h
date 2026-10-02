@@ -12,6 +12,7 @@ static bool g_spi_init = false;
 
 #define SPI_TAG "SPI> "
 
+#define CS_NONE 0xFFFFFFFF
 // SPIWrap: Wraps SPI transactions for a specific device, ensuring that only one
 // device is active at a time.
 template <SPIOwner owner, uint32_t CS, bool active_low, uint32_t defClock,
@@ -32,11 +33,13 @@ public:
       delay(100);
       g_spi_init = true;
     }
-    pinMode(CS, OUTPUT);
-    if (active_low) {
-      digitalWrite(CS, HIGH);
-    } else {
-      digitalWrite(CS, LOW);
+    if (CS != CS_NONE) {
+      pinMode(CS, OUTPUT);
+      if (active_low) {
+        digitalWrite(CS, HIGH);
+      } else {
+        digitalWrite(CS, LOW);
+      }
     }
     log(SPI_TAG "init dev: %s cs: %d", name, CS);
     status = Status::Init;
@@ -66,10 +69,12 @@ public:
     SPI.beginTransaction(SPISettings(clk, bitOrder, dataMode));
     log(SPI_TAG "dev: %s Started transact", name);
 
-    if (active_low) {
-      digitalWrite(CS, LOW);
-    } else {
-      digitalWrite(CS, HIGH);
+    if (CS != CS_NONE) {
+      if (active_low) {
+        digitalWrite(CS, LOW);
+      } else {
+        digitalWrite(CS, HIGH);
+      }
     }
     status = Status::TransferActive;
     return true;
@@ -130,10 +135,12 @@ public:
           (int)g_spi_owner, (int)status);
       return;
     }
-    if (active_low) {
-      digitalWrite(CS, HIGH);
-    } else {
-      digitalWrite(CS, LOW);
+    if (CS != CS_NONE) {
+      if (active_low) {
+        digitalWrite(CS, HIGH);
+      } else {
+        digitalWrite(CS, LOW);
+      }
     }
     SPI.endTransaction();
     log(SPI_TAG "dev: %s end transact", name);
