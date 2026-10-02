@@ -4,11 +4,10 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-
 enum class SPIOwner { None, Flash, Sd, SdInit };
 
-static SPIOwner g_spi_owner = SPIOwner::None;
-static bool g_spi_init = false;
+extern SPIOwner g_spi_owner;
+extern bool g_spi_init;
 
 #define SPI_TAG "SPI> "
 
@@ -52,8 +51,22 @@ public:
     Session(bool success, SPIWrap *wrap) : success(success), wrap(wrap) {}
 
     ~Session() {
-      if (wrap && success)
+      if (wrap)
         wrap->end();
+    }
+
+    Session(const Session &) = delete;
+    Session &operator=(const Session &) = delete;
+    Session(Session &&other) : success(other.success), wrap(other.wrap) {
+      other.wrap = nullptr;
+    }
+    Session &operator=(Session &&other) {
+      if (this != &other) {
+        success = other.success;
+        wrap = other.wrap;
+        other.wrap = nullptr;
+      }
+      return *this;
     }
   };
 
@@ -70,6 +83,7 @@ public:
     log(SPI_TAG "dev: %s Started transact", name);
 
     if (CS != CS_NONE) {
+      log(SPI_TAG "init dev: %s cs assert: %d", name, CS);
       if (active_low) {
         digitalWrite(CS, LOW);
       } else {
@@ -84,7 +98,7 @@ public:
     if (_begin(clk)) {
       return Session{true, this};
     } else
-      return Session{false, nullptr};
+      return Session{false, this};
   }
 
   struct TransferResult {
@@ -136,6 +150,7 @@ public:
       return;
     }
     if (CS != CS_NONE) {
+      log(SPI_TAG "end: name: %s cs deassert: %d", name, CS);
       if (active_low) {
         digitalWrite(CS, HIGH);
       } else {

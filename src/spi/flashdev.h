@@ -5,7 +5,7 @@
 #define FLASH_TAG "FLASH> "
 
 class Flash
-    : public SPIWrap<SPIOwner::Flash, 53, true, MHZ(8), MSBFIRST, SPI_MODE0> {
+    : public SPIWrap<SPIOwner::Flash, 53, true, MHZ(4), MSBFIRST, SPI_MODE0> {
   using gpio_t = int;
 
   constexpr static gpio_t WP_ENABLE_GPIO = 41;
@@ -59,7 +59,7 @@ public:
   void describe(Cmd cmd, const char *action) {
 #define fn(x)                                                                  \
   case Cmd::x:                                                                 \
-    log(FLASH_TAG "%s: %s", #x, action);                                                 \
+    log(FLASH_TAG "%s: %s", #x, action);                                       \
     break;
     switch (cmd) { FLASH_CMD(fn) }
 #undef fn

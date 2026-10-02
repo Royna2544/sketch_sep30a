@@ -41,9 +41,9 @@ Flash::Result Flash::transact(Cmd cmd, void *data) {
     break;
   }
   case Cmd::READ_STATUS: {
-    transfer(0x05);
-    auto status = transfer();
+    auto status = transfer(0x05);
     res.ok = status.success;
+    res.ok &= transfer().success;
     res.data.status.wel = extractbit(status.res, 1);
     res.data.status.wip = extractbit(status.res, 0);
     res.data.status.bp0 = extractbit(status.res, 2);
@@ -92,12 +92,14 @@ Flash::Result Flash::transact(Cmd cmd, void *data) {
 void Flash::describe(Cmd cmd, Result &res) {
   switch (cmd) {
   case Cmd::READ_JEDEC_ID: {
-    log(FLASH_TAG "JEDEC ID: 0x%02x:0x%02x:0x%02x", res.data.jedec_id.manufacturer,
-        res.data.jedec_id.memoryType, res.data.jedec_id.density);
+    log(FLASH_TAG "JEDEC ID: 0x%02x:0x%02x:0x%02x",
+        res.data.jedec_id.manufacturer, res.data.jedec_id.memoryType,
+        res.data.jedec_id.density);
     break;
   }
   case Cmd::READ_STATUS: {
-    log(FLASH_TAG "Status: wel: %d wip %d", res.data.status.wel, res.data.status.wip);
+    log(FLASH_TAG "Status: wel: %d wip %d", res.data.status.wel,
+        res.data.status.wip);
     break;
   }
   case Cmd::WRITE_ENABLE: {

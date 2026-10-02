@@ -6,7 +6,8 @@
 // Log string literal without format
 #define logs Serial.println
 // Log string literal with printf-style format
-inline void log(const char *fmt, ...) {
+#define log logging
+inline void logging(const char *fmt, ...) {
   va_list args;
   char logbuf[64] = {};
 
@@ -18,8 +19,13 @@ inline void log(const char *fmt, ...) {
 }
 
 // Verbose variants
+#ifdef DEBUG
+#define vlogs(x, ...) logging(x, ##__VA_ARGS__)
+#define vlog(x, ...) logging(x, ##__VA_ARGS__)
+#else
 #define vlogs(x, ...)
 #define vlog(x, ...)
+#endif
 
 // Give Mhz value from raw number. Example: MHZ(8) = 8000000
 #define MHZ(x) (x * 1000000)

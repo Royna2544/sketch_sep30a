@@ -27,7 +27,7 @@ void SD::Packet::updcrc7() {
 }
 
 uint16_t __be SD::DataToken::calc_crc(size_t data_size_byte) {
-  uint16_t __le calc_crc = crc16_ccitt((uint8_t*)data, data_size_byte);
+  uint16_t __le calc_crc = crc16_ccitt((uint8_t *)data, data_size_byte);
   uint16_t __be flipped;
   flip((uint8_t *)&calc_crc, 2, (uint8_t *)&flipped);
   return flipped;
@@ -315,7 +315,7 @@ bool SD::sendSingleDataToken(DataToken *tok, uint32_t lba) {
 }
 
 SD::Session SD::begin(uint32_t clk) {
-  Session fSession{false, nullptr};
+  SD::SDSession fSession{false, this};
   Resp3 resp3;
 
   if (!SPIWrap::_begin(clk)) {
@@ -348,13 +348,13 @@ SD::Session SD::begin(uint32_t clk) {
   return {true, this};
 }
 
-void SD::end() {
+SD::SDSession::~SDSession() {
   // Maybe bad code 😛
   digitalWrite(49, HIGH); // deassert CS
   // cycle some useless clocks
   for (int i = 0; i < 10; i++)
-    transfer();
-  SPIWrap::end();
+    static_cast<SD *>(wrap)->transfer();
+  log(SD_LOGTAG "SDSession end");
 }
 
 bool SD::isBusy() { return false; }
@@ -389,8 +389,7 @@ bool SD::writeSector(uint32_t sector, const uint8_t *src) {
   return true;
 }
 
-bool SD::writeSectors(uint32_t sector, const uint8_t *src,
-                      size_t count) {
+bool SD::writeSectors(uint32_t sector, const uint8_t *src, size_t count) {
   for (size_t i = 0; i < count; i++) {
     if (!writeSector(sector + i, src)) {
       return false;

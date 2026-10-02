@@ -12,7 +12,7 @@ void SDInitRoutine::run() {
     } else if (x % 3 == 2) {
       log("Tok... #%d", x);
     }
-    ok &= transfer().res;
+    ok &= transfer().success;
   }
   ASSERT_TRUE(ok);
   log("SD card init routine complete, sent 80 clocks");
